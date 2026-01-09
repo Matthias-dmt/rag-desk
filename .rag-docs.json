@@ -1,0 +1,19 @@
+{
+  "documents": [
+    {
+      "docId": "9fcf81f7-eae2-4ff5-9800-18c8a13fa6ed",
+      "docName": "pricing-notes.md",
+      "chunkCount": 1
+    },
+    {
+      "docId": "e9de09f0-f9e0-4a7a-a237-e434f6b8150f",
+      "docName": "support-playbook.md",
+      "chunkCount": 1
+    },
+    {
+      "docId": "88cd0cfa-f014-4d25-bb3d-c2f8c6bc5978",
+      "docName": "product-scope.md",
+      "chunkCount": 1
+    }
+  ]
+}

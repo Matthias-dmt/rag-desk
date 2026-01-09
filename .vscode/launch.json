@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Vitest Current File",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "${env:HOME}/.nvm/versions/node/v22.21.1/bin/node",
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "args": ["run", "${file}"],
+      "cwd": "${workspaceFolder}",
+      "autoAttachChildProcesses": true,
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}
