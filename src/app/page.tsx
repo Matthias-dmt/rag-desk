@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 type IngestResponse = {
@@ -42,6 +42,7 @@ function formatAnswer(raw: string) {
 export default function Home() {
   const [docName, setDocName] = useState("");
   const [docText, setDocText] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
   const [docs, setDocs] = useState<IngestResponse[]>([]);
   const [ingestStatus, setIngestStatus] = useState<string | null>(null);
   const [question, setQuestion] = useState("");
@@ -55,6 +56,7 @@ export default function Home() {
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const loadDocuments = async () => {
@@ -80,8 +82,66 @@ export default function Home() {
     setError(null);
     setIngestStatus(null);
 
+    const fileToUpload = fileInputRef.current?.files?.[0] ?? docFile ?? null;
+
+    if (fileToUpload) {
+      if (useOpenAI && !apiKey.trim()) {
+        setError("Please provide an API key for OpenAI-compatible mode.");
+        return;
+      }
+
+      if (!docFile) {
+        setDocFile(fileToUpload);
+      }
+
+      setIsIngesting(true);
+      try {
+        const form = new FormData();
+        form.append("file", fileToUpload);
+        form.append("name", docName.trim() || fileToUpload.name);
+        const lowerName = fileToUpload.name.toLowerCase();
+        const sourceType = lowerName.endsWith(".pdf")
+          ? "pdf"
+          : lowerName.endsWith(".md")
+            ? "markdown"
+            : "text";
+        form.append("sourceType", sourceType);
+        if (useOpenAI) {
+          form.append("apiKey", apiKey.trim());
+          if (baseUrl.trim()) {
+            form.append("baseUrl", baseUrl.trim());
+          }
+        }
+
+        const response = await fetch("/api/ingest", {
+          method: "POST",
+          body: form,
+        });
+
+        const data = (await response.json()) as IngestResponse | { error: string };
+        if (!response.ok) {
+          throw new Error("error" in data ? data.error : "Ingestion failed");
+        }
+
+        setDocs((prev) => [...prev, data as IngestResponse]);
+        setDocText("");
+        setDocFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        setIngestStatus(
+          `Stored ${data.chunkCount} chunks from "${data.docName}".`
+        );
+        return;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setIsIngesting(false);
+      }
+    }
+
     if (!docName.trim() || !docText.trim()) {
-      setError("Please provide a document name and content.");
+      setError("Please provide a document name and content or upload a file.");
       return;
     }
 
@@ -111,6 +171,7 @@ export default function Home() {
 
       setDocs((prev) => [...prev, data as IngestResponse]);
       setDocText("");
+      setDocFile(null);
       setIngestStatus(
         `Stored ${data.chunkCount} chunks from "${docName.trim()}".`
       );
@@ -218,13 +279,45 @@ export default function Home() {
                 />
               </label>
               <label className="text-sm font-medium text-slate-700">
+                Upload file (optional)
+                <input
+                  className="mt-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-400 focus:outline-none"
+                  type="file"
+                  accept=".md,.txt,.pdf"
+                  ref={fileInputRef}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] ?? null;
+                    setDocFile(file);
+                    if (file && !docName.trim()) {
+                      setDocName(file.name);
+                    }
+                    if (!file) {
+                      setDocText("");
+                    }
+                  }}
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Supports .md, .txt, and .pdf files.
+                </p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Selected: {docFile ? docFile.name : "none"}
+                </p>
+              </label>
+              <label className="text-sm font-medium text-slate-700">
                 Document content
                 <textarea
                   className="mt-2 h-44 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-400 focus:outline-none"
                   placeholder="Paste markdown or plain text here..."
                   value={docText}
                   onChange={(event) => setDocText(event.target.value)}
+                  disabled={Boolean(docFile)}
                 />
+                {docFile ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    File selected: {docFile.name}. Remove the file to paste
+                    content manually.
+                  </p>
+                ) : null}
               </label>
               <button
                 className="flex items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"

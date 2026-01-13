@@ -6,7 +6,7 @@ This project favors clarity and correctness over flashy features. It ships with 
 
 ## Product Summary
 
-- Upload markdown or text
+- Upload markdown, text, or PDF
 - Organize into a lightweight knowledge base
 - Ask natural-language questions
 - Receive answers with citations
@@ -114,7 +114,7 @@ We also ask for concise markdown formatting so the UI renders clean output.
 
 ## Limitations
 
-- No PDF ingestion yet
+- PDF parsing runs in the Node runtime (not Edge)
 - No auth or multi-user isolation
 - Retrieval quality depends on chunking and embedding model
 - File store is not suitable for large datasets
@@ -173,6 +173,10 @@ pnpm dev
 
 Open http://localhost:3000
 
+### PDF support
+
+PDF ingestion is supported via the upload flow. The parser runs in the Node runtime and uses the pdf-parse worker. The worker is configured via `pdf-parse/worker`, and `next.config.ts` marks the package as external so the worker can be resolved in server runtimes.
+
 ## Environment Variables
 
 Local (Qdrant + Ollama):
@@ -181,6 +185,9 @@ Local (Qdrant + Ollama):
 VECTOR_STORE=qdrant
 QDRANT_URL=http://localhost:6333
 QDRANT_COLLECTION=rag_chunks
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_EMBED_MODEL=nomic-embed-text
+OLLAMA_CHAT_MODEL=llama3.2:1b
 ```
 
 Deploy (file store + BYOK):
@@ -198,6 +205,12 @@ Unit tests:
 
 ```bash
 pnpm test
+```
+
+PDF integration check (real runtime, no mocks):
+
+```bash
+pnpm test:pdf
 ```
 
 Qdrant integration test:
