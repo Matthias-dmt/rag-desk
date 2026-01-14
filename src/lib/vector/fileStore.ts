@@ -8,6 +8,16 @@ type StoreFile = {
 
 const DEFAULT_FILENAME = ".rag-store.json";
 
+function resolveStorePath() {
+  if (process.env.RAG_STORE_PATH) {
+    return process.env.RAG_STORE_PATH;
+  }
+  if (process.env.CF_PAGES || process.env.NODE_ENV === "production") {
+    return "/tmp/rag-store.json";
+  }
+  return path.join(process.cwd(), DEFAULT_FILENAME);
+}
+
 function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) {
     throw new Error("Embedding dimensions do not match");
@@ -35,7 +45,7 @@ function cosineSimilarity(a: number[], b: number[]): number {
 export class FileVectorStore implements VectorStore {
   private filePath: string;
 
-  constructor(filePath = path.join(process.cwd(), DEFAULT_FILENAME)) {
+  constructor(filePath = resolveStorePath()) {
     this.filePath = filePath;
   }
 

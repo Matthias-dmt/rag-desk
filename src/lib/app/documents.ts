@@ -29,9 +29,29 @@ type FileStore = {
   records: FileStoreRecord[];
 };
 
-const DOCS_FILE = path.join(process.cwd(), ".rag-docs.json");
-const STORE_FILE = path.join(process.cwd(), ".rag-store.json");
+const DOCS_FILE = resolveDocsPath();
+const STORE_FILE = resolveStorePath();
 const DEFAULT_COLLECTION = "rag_chunks";
+
+function resolveDocsPath() {
+  if (process.env.RAG_DOCS_PATH) {
+    return process.env.RAG_DOCS_PATH;
+  }
+  if (process.env.CF_PAGES || process.env.NODE_ENV === "production") {
+    return "/tmp/rag-docs.json";
+  }
+  return path.join(process.cwd(), ".rag-docs.json");
+}
+
+function resolveStorePath() {
+  if (process.env.RAG_STORE_PATH) {
+    return process.env.RAG_STORE_PATH;
+  }
+  if (process.env.CF_PAGES || process.env.NODE_ENV === "production") {
+    return "/tmp/rag-store.json";
+  }
+  return path.join(process.cwd(), ".rag-store.json");
+}
 
 export async function listDocuments(): Promise<DocumentEntry[]> {
   const existing = await loadRegistry();

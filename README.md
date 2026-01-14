@@ -175,7 +175,7 @@ Open http://localhost:3000
 
 ### PDF support
 
-PDF ingestion is supported via the upload flow. The parser runs in the Node runtime and uses the pdf-parse worker. The worker is configured via `pdf-parse/worker`, and `next.config.ts` marks the package as external so the worker can be resolved in server runtimes.
+PDF ingestion is supported via the upload flow. The parser runs in the Node runtime and uses the pdf-parse worker. The worker is configured via `pdf-parse/worker`, and `next.config.ts` marks the package as external so the worker can be resolved in server runtimes. If your deployment environment cannot read from a writable filesystem, set `DISABLE_PDF=true` to disable PDF ingestion.
 
 ## Environment Variables
 
@@ -194,6 +194,10 @@ Deploy (file store + BYOK):
 
 ```bash
 VECTOR_STORE=file
+RAG_STORE_PATH=/tmp/rag-store.json
+RAG_DOCS_PATH=/tmp/rag-docs.json
+RATE_LIMIT_MAX=30
+RATE_LIMIT_WINDOW_MS=60000
 OPENAI_BASE_URL=https://api.openai.com
 OPENAI_EMBED_MODEL=text-embedding-3-small
 OPENAI_CHAT_MODEL=gpt-4o-mini

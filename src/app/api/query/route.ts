@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { answerQuestion } from "@/lib/rag/query";
 import { embeddingProvider, llmProvider, vectorStore } from "@/lib/app/runtime";
 import { createOpenAIEmbeddingProvider, createOpenAILlmProvider } from "@/lib/providers/openai";
+import { checkRateLimit, getClientIp } from "@/lib/app/rateLimit";
 
 type QueryRequest = {
   question?: string;
@@ -12,6 +13,17 @@ type QueryRequest = {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(new Headers(request.headers));
+    const max = Number(process.env.RATE_LIMIT_MAX ?? 30);
+    const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000);
+    const limit = checkRateLimit(`${ip}:query`, max, windowMs);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again later." },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json()) as QueryRequest;
 
     if (!body?.question) {

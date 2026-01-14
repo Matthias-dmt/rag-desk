@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { PDFParse } from "pdf-parse";
 import "pdf-parse/worker";
 import { getPath } from "pdf-parse/worker";
+import { checkRateLimit, getClientIp } from "@/lib/app/rateLimit";
 import { ingestDocument } from "@/lib/rag/ingestion";
 import type { KnowledgeDocument, SourceType } from "@/lib/rag/types";
 import { embeddingProvider, vectorStore } from "@/lib/app/runtime";
@@ -20,6 +21,17 @@ type IngestRequest = {
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(new Headers(request.headers));
+    const max = Number(process.env.RATE_LIMIT_MAX ?? 30);
+    const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000);
+    const limit = checkRateLimit(`${ip}:ingest`, max, windowMs);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Try again later." },
+        { status: 429 }
+      );
+    }
+
     const contentType = request.headers.get("content-type") ?? "";
     const body =
       contentType.includes("multipart/form-data") ? null : ((await request.json()) as IngestRequest);
@@ -38,14 +50,20 @@ export async function POST(request: Request) {
       apiKey = (form.get("apiKey") as string) ?? undefined;
       baseUrl = (form.get("baseUrl") as string) ?? undefined;
 
-      if (file && file instanceof File) {
-        name = typeof formName === "string" ? formName : file.name;
-        sourceType =
-          typeof formSourceType === "string"
-            ? (formSourceType as SourceType)
-            : inferSourceType(file);
-        text = await extractTextFromFile(file);
+    if (file && file instanceof File) {
+      name = typeof formName === "string" ? formName : file.name;
+      sourceType =
+        typeof formSourceType === "string"
+          ? (formSourceType as SourceType)
+          : inferSourceType(file);
+      if (sourceType === "pdf" && process.env.DISABLE_PDF === "true") {
+        return NextResponse.json(
+          { error: "PDF ingestion is disabled in this environment." },
+          { status: 400 }
+        );
       }
+      text = await extractTextFromFile(file);
+    }
     }
 
     if (!name || !text) {

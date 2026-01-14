@@ -297,7 +297,8 @@ export default function Home() {
                   }}
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Supports .md, .txt, and .pdf files.
+                  Supports .md, .txt, and .pdf files (PDF may be disabled on
+                  deploy).
                 </p>
                 <p className="mt-1 text-xs text-slate-400">
                   Selected: {docFile ? docFile.name : "none"}
