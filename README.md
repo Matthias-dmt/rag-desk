@@ -251,7 +251,7 @@ curl -X POST http://localhost:3000/api/query \
 
 ## Deployment: Cloudflare Pages (Free Tier)
 
-This app is deployable to Cloudflare Pages using a static build + functions.
+Deployment work is currently in progress. The steps below are planned and not yet fully validated end to end.
 
 ### 1) Create a new Pages project
 
@@ -277,8 +277,8 @@ OPENAI_CHAT_MODEL=gpt-4o-mini
 
 ### 4) Deploy
 
-- Trigger deploy from Cloudflare UI
-- The deployed UI will allow BYOK keys from users
+- Trigger deploy from Cloudflare UI (in progress)
+- BYOK support in the deployed UI is currently being implemented
 
 If Cloudflare Pages cannot run the Next.js route handlers as needed, the $0 fallback is:
 - Deploy frontend to Cloudflare Pages
